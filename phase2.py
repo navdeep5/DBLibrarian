@@ -2,6 +2,8 @@ from pymongo import MongoClient
 import os
 import sys
 import subprocess
+# from sets import Set
+import re
 DEBUG = True
 
 def connect(port_no):
@@ -45,12 +47,58 @@ def venue_list():
 	'''
 	pass
 
-def add_article():
+def checkUniqueness(id, col):
+	'''
+	check if id has already been used in the database.
+	'''
+	try:
+		id = int(id)
+	except Exception:
+			return False
+			
+	results_count = col.count_documents({"id": id})
+	if (results_count == 0):
+		return True
+	return False
+
+def add_article(col):
 	'''
 	User is able to add an article to the collection.
 	User provides a unique id, a title, a list of authors, and a year.
 	'''
-	pass
+	unique = False
+	while(not unique):
+		id = input("Please enter a unique positive integer as the article id: ")
+		unique = checkUniqueness(id, col)
+		try:
+			id = int(id)
+		except Exception:
+			unique = False
+		if (not unique):
+			print("\nInvalid id! Please try a different id.\n")
+
+	title = input("Please enter a title for the article: ")
+
+	authors = input("Please enter a one or many authors of the article seperated by commas: ")
+
+	valid = False
+	while(not valid):
+		year = input("Please enter the publication year of the article: ")
+		try:
+			year = int(year)
+			valid = True
+		except Exception:
+			valid = False
+
+	authors_list = authors.split(',')
+	try:
+		article = {"id": int(id), "title": title, "authors": authors_list, "year": int(year), "abstract": None, "venue": None, "references": [], "n_citations": 0}
+		col.insert_one(article)
+		print("\nArticle added!\n")
+	except Exception:
+		print("\nArticle could not be added.\n")
+		return
+
 
 def main():
 
@@ -79,7 +127,7 @@ def main():
 	valid = True
 
 	while valid:
-		options = ["1) Search for article", "2) Search for authors", "3) List the venues", "4) Add an article"]
+		options = ["1) Search for article", "2) Search for authors", "3) List the venues", "4) Add an article", "'q' to quit."]
 		print("*" * 30)
 		print(" " * 11 + "User Menu")
 		for option in options:
@@ -89,7 +137,11 @@ def main():
 		user_option = input(">>>")
 
 		# user input processing
-		if user_option.isdigit() == False:
+		if user_option.isdigit() == False and bool(re.compile('q').search(user_option)):
+			print("Goodbye!\n")
+			return
+
+		elif user_option.isdigit() == False:
 			print("Invalid input! \nPlease enter a number between 1 - 4.")
 
 		elif user_option.isdigit() and int(user_option) > 4:
@@ -108,7 +160,7 @@ def main():
 			venue_list()
 		
 		elif int(user_option) == 4: # 1. add article
-			add_article()
+			add_article(col)
 	
 
 if __name__ == "__main__":
