@@ -29,13 +29,29 @@ def article_search():
 	'''
 	pass
 
-def author_search():
+def author_search(col):
 	'''
 	User is able to provide a list of keywords.
 	Keywords are used to search for matches in any of the authors' names
 	Search is case insensitive.
 	'''
-	pass
+	
+	# DEBUG
+	print(col.count_documents({}))
+
+	# ask user for a keyword
+	keyword = input("Enter a author keyword: ")
+
+	# create and run query
+	keyword = keyword.strip()
+	string_match = "(?i)" + keyword.strip() + "(?-i)"
+	# result = col.find({"authors": {"$regex": string_match}})
+
+	pipeline = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": {"$regex" : string_match}}}]
+	result = col.aggregate(pipeline)
+
+	for i in result:
+		print(i)
 
 def venue_list():
 	'''
@@ -154,7 +170,7 @@ def main():
 			article_search()
 		
 		elif int(user_option) == 2: # 1. search for authors - case insensitive
-			author_search()
+			author_search(col)
 		
 		elif int(user_option) == 3: # 1. list of venues
 			venue_list()
