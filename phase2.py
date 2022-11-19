@@ -17,7 +17,7 @@ def connect(port_no):
 	'''
 
 	port = 'mongodb://localhost:' + port_no
-	client = MongoClient()
+	client = MongoClient(port)
 
 	return client
 
@@ -119,14 +119,9 @@ def add_article(col):
 def main():
 
 	# connecting to mongodb server
-	try:
-		client = connect(sys.argv[1]) # run server before connecting
-		jsonfile_name = sys.argv[2]	# file is assumed to be in the current directory. Under specifications, Phase 1.
-	except IndexError:
-		print("You must pass the port number when running this program")
-		print("Example usage: ")
-		print("python3 phase2.py port_no\n")
-		quit()
+	client = connect(sys.argv[1]) # run server before connecting
+	jsonfile_name = sys.argv[2]	# file is assumed to be in the current directory. Under specifications, Phase 1.
+
 
 
 	# connecting to database 291db 
