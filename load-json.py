@@ -15,7 +15,7 @@ def connect(port_no):
 	'''
 
 	port = 'mongodb://localhost:' + port_no
-	client = MongoClient()
+	client = MongoClient(port)
 
 	return client
 
@@ -60,10 +60,11 @@ def main():
 	'''
 
 	# loading the dblp collection from json file.
-	cmd = "mongoimport --db=291db --collection=dblp --file=" + jsonfile_name
+	cmd = "mongoimport --port=" + sys.argv[1] +" --db=291db --collection=dblp --file=" + jsonfile_name
 	returned_value = subprocess.call(cmd, shell=True) 
 	# exit code in unix 
 	print('returned value', returned_value) # return value 0 means it is successful.
+
 
 
 
