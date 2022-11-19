@@ -120,9 +120,6 @@ def main():
 
 	# connecting to mongodb server
 	client = connect(sys.argv[1]) # run server before connecting
-	jsonfile_name = sys.argv[2]	# file is assumed to be in the current directory. Under specifications, Phase 1.
-
-
 
 	# connecting to database 291db 
 	db_name = '291db' # phase 1 specs
