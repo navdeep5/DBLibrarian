@@ -94,6 +94,7 @@ def article_search(col):
 				# 		matches += 1
 				# print(matches)
 
+				
 				for word in key_words:
 					if word.lower() in article["title"].lower():
 						matches += 1
@@ -107,49 +108,50 @@ def article_search(col):
 					if any(word in s for s in article["authors"]):
 						matches += 1
 
-				if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
+				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
 				
+				if matches >= len(key_words):
 					print(f"{i}: {id} | {title} | {year} | {venue}")
 					results.append(article)
 					i += 1
 
 				# allow user to learn more about an article 
-				if len(results) > 0:
-					while inner_valid:
-						print("*" * 30)
-						print("Enter the # of the article you want to know more about.")
-						print("Or enter b to go back.")
-						article_num = input(">>>")
-						
-						# input checking
-						if article_num.strip() == "b":
-							inner_valid = False
-						elif article_num.isdigit() == False:
-							print("Please enter a number.")
-						elif article_num[0] == "-":
-							print("Please enter a positive number.")
-						elif article_num.isdigit() and int(article_num) > len(results) - 1:
-							print("Please pick a number less than " + str(len(results) - 1) + ".")
-						elif article_num.isdigit() and int(article_num) < 0:
-							print("Please pick a number greater than 0.")
-						else:
+			if len(results) > 0:
+				while inner_valid:
+					print("*" * 30)
+					print("Enter the # of the article you want to know more about.")
+					print("Or enter b to go back.")
+					article_num = input(">>>")
+					
+					# input checking
+					if article_num.strip() == "b":
+						inner_valid = False
+					elif article_num.isdigit() == False:
+						print("Please enter a number.")
+					elif article_num[0] == "-":
+						print("Please enter a positive number.")
+					elif article_num.isdigit() and int(article_num) > len(results) - 1:
+						print("Please pick a number less than " + str(len(results) - 1) + ".")
+					elif article_num.isdigit() and int(article_num) < 0:
+						print("Please pick a number greater than 0.")
+					else:
 
-							# gather the chosen article
-							chosen = results[int(article_num)]
+						# gather the chosen article
+						chosen = results[int(article_num)]
 
-							# present the full article information
-							print("Here is more infromation about the article:")
-							chosen_id = chosen["id"]
-							info = col.find({"$match": {"id": chosen_id}})
+						# present the full article information
+						print("Here is more infromation about the article:")
+						chosen_id = chosen["id"]
+						info = col.find({"$match": {"id": chosen_id}})
 
-							# display articles which reference this article
-							print("Here are some articles that reference the article you picked:")
-							for match in col.aggregate({"$unwind": "$references"}, {"$match": {"references": chosen_id}}):
-								reference_id = match["id"] if "id" in match else ""
-								reference_title = match["title"] if "title" in match else ""
-								reference_year = match["year"] if "year" in match else ""
-								
-								print(f"{reference_id} | {reference_title} | {reference_year}")
+						# display articles which reference this article
+						print("Here are some articles that reference the article you picked:")
+						for match in col.aggregate({"$unwind": "$references"}, {"$match": {"references": chosen_id}}):
+							reference_id = match["id"] if "id" in match else ""
+							reference_title = match["title"] if "title" in match else ""
+							reference_year = match["year"] if "year" in match else ""
+							
+							print(f"{reference_id} | {reference_title} | {reference_year}")
 
 def author_search(col):
 	'''
