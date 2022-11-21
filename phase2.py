@@ -1,5 +1,4 @@
 from pymongo import MongoClient
-from database_functions import *
 import os
 import sys
 import subprocess
