@@ -53,15 +53,96 @@ def author_search(col):
 	for i in result:
 		print(i)
 
-def venue_list():
+def venue_list(db):
 	'''
-	User is able to enter a number 'n'.
-	Result will include a list of the top 'n' venues.
-	For each venue, result will contain: the venue, the number of articles in that venue, and the number of articles that reference a paper in that venue.
-	Results will be ordered based on the number of papers that reference the venue.
-	Results will also be ordered such that venues in the top cities are shown first.
-	'''
-	pass
+
+	'''	
+	col = db['dblp']
+
+	os.system('cls||echo -e \\\\033c')
+
+	while True:
+		n = input("Input the number of top venues you would like to see:\n>>>")
+		if not n.isdigit() or int(n) < 1:
+			print("The number must be an integer greater than 0!")
+			continue
+		break
+	n = int(n)
+
+	pipeline = [
+	  { "$project": {"_id": 0, "references": 1}},
+	  { "$unwind": {"path": "$references"}},
+	  
+	  # left outer join:
+	  {
+	  	"$lookup": 
+	  	{
+	  	  "from" : "dblp",
+	  	  "localField" : "references",
+	  	  "foreignField" : "id",
+	  	  "as": "referencing_venue"
+	  	}
+	  },
+
+
+	  # stage : group by venue
+	  {
+	  	"$group":
+	  	{
+	  	  "_id": "$referencing_venue.venue",
+	  	  "totalReferences": {"$count": {}} # count(*)
+	  	}
+	  },
+
+	  {"$match" : {"$expr": {"$ne": ["$_id",[]]}}}, # remove references to no venues
+	  {"$match" : {"$expr": {"$ne": ["$_id",['']]}}}, # remove empty venue names
+
+	  { "$unwind": {"path": "$_id"}},
+	  { "$sort": {"totalReferences": -1}},
+  	  { "$limit" : n}
+	]
+
+	venues = col.aggregate(pipeline)
+	# os.system('cls||echo -e \\\\033c')
+	
+
+
+	try:
+		print("Printing venues in descending order . . .")
+		print("-" * 120)
+		for i in venues:
+			print("Venue:",i['_id'],"| Times Cited:", i['totalReferences'], "| Article Count:", count_articles(db['dblp'], i['_id']))
+	except IndexError:
+		print("No venues to print!")
+
+	# for i in venues:
+	# 	print(i)
+	return
+
+
+def count_articles(col, venue):
+
+	pipeline = [
+	{
+	  "$group":
+	  {
+	  	"_id": "$venue",
+	  	"num_articles": {"$count": {}}
+	  }
+	},
+	{"$match": {"$expr": { "$eq": ["$_id",venue] }}},
+	{"$project": {"num_articles": 1, "_id": 0}}
+	]
+
+	num_articles = col.aggregate(pipeline)
+
+	for i in num_articles:
+		return(i['num_articles'])
+
+	return
+	
+
+
 
 def checkUniqueness(id, col):
 	'''
@@ -165,8 +246,8 @@ def main():
 			author_search(col)
 		
 		elif int(user_option) == 3: # 1. list of venues
-			venue_list()
-		
+			venue_list(db)
+
 		elif int(user_option) == 4: # 1. add article
 			add_article(col)
 	
