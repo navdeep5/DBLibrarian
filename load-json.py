@@ -48,15 +48,30 @@ def main():
 		#assertion bug: assert(dropped) 
 	col = db[col_name] 
 
+	# Creating Indexes
+	col.drop_indexes()
+	# 1.
+
+	# 2.
+
+	# 3. Venue List
+	col.create_index([("references", 1)])
+	col.create_index([("venue", 1)])
+	col.create_index([("id", 1)])
+	# 4. 
+
+	if DEBUG:
+		# printing all indexes for debugging purposes
+		for i in col.index_information():
+		 	print("Index: ",i)
 
 	# conceptual structure of json file
 	'''
-	{"abstract": string, "authors": [], "n_citation": integer, "references": [], "title": string, "venue": string, "year": integer, "id": string, }
+	{"abstract": string, "authors": [], "n_citation": integer, "references": [], "title": string, "venue": string, "year": integer, "id": string }
 	
 	abstract is optional, there are cases with it and cases without it.
-	"authors": [string] - list of authors
-	"references": [string] - list of references, each references are strings. an example of a reference. "51c7e02e-f5ed-431a-8cf5-f761f266d4be"
-
+	"authors": [string] - list of strings, each string is an author
+	"references": [string] - list of references, each reference is a string. an example of a reference. "51c7e02e-f5ed-431a-8cf5-f761f266d4be". 
 	'''
 
 	# loading the dblp collection from json file.
@@ -64,17 +79,6 @@ def main():
 	returned_value = subprocess.call(cmd, shell=True) 
 	# exit code in unix 
 	print('returned value', returned_value) # return value 0 means it is successful.
-
-
-
-
-
-
-
-
-
-
-
 
 
 
