@@ -17,17 +17,139 @@ def connect(port_no):
 	'''
 
 	port = 'mongodb://localhost:' + port_no
-	client = MongoClient(port)
+	client = MongoClient()
 
 	return client
 
-def article_search():
+def article_search(col):
 	'''
 	User is able to provide a list of keywords.
 	Keywords are used to search for matches in any of title, authors, abstract, venue and year.
 	Search is case insensitive.
 	'''
-	pass
+	
+	# drop indexes
+	col.drop_indexes()
+
+	# create indexes
+	col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
+
+	# create initial loop 
+	valid = True
+	inner_valid = True
+
+	while valid:
+
+		# ask user for keyboard
+		print("Enter some keyword to search for an article.")
+		print("Separate your keyword by a comma (',').")
+		print("Or type b to return back to User Menu.")
+		key_words_string = input(">>>")
+		print("*" * 30)
+
+		# input processing
+		key_words = key_words_string.split(',')
+
+		# data processing - ensure there are no uncessary white spaces
+		for i in range(len(key_words)):
+			key_words[i] = key_words[i].strip().lower()
+
+		# check input
+		if len(key_words) == 1:
+
+			# return to User Menu
+			if key_words[0] == 'b':
+				valid = False
+				return
+		
+		elif len(key_words) == 0:
+			print("No words have been entered... Try again!")
+
+		# write search query
+		else:
+			pipeline = {"$text": {"$search": f"{' '.join(key_words)}"}}
+			results = []
+
+			i = 0
+			for article in col.find(pipeline):
+				matches = 0
+
+				id = article["id"] if "id" in article else ""
+				title = article["title"] if "title" in article else ""
+				year = article["year"] if "year" in article else ""
+				venue = article["venue"] if "venue" in article else ""
+				abstract = article["abstract"] if "abstract" in article else ""
+				
+				features = ["title", "venue", "year"]
+				if abstract != "":
+					features.append("abstract")
+
+				# for part in features:
+				# 	for word in key_words:
+				# 		if word in str(article[part]):
+				# 			#print(article[part])
+				# 			matches += 1
+				# for word_2 in key_words:
+				# 	if any(word_2 in s for s in article["authors"]):
+				# 		matches += 1
+				# print(matches)
+
+				for word in key_words:
+					if word.lower() in article["title"].lower():
+						matches += 1
+					if word.lower() in article["venue"].lower():
+						matches += 1
+					if word ==  str(article["year"]):
+						matches += 1
+					if abstract != "":
+						if word.lower() in article["abstract"].lower():
+							matches += 1
+					if any(word in s for s in article["authors"]):
+						matches += 1
+
+				if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
+				
+					print(f"{i}: {id} | {title} | {year} | {venue}")
+					results.append(article)
+					i += 1
+
+				# allow user to learn more about an article 
+				if len(results) > 0:
+					while inner_valid:
+						print("*" * 30)
+						print("Enter the # of the article you want to know more about.")
+						print("Or enter b to go back.")
+						article_num = input(">>>")
+						
+						# input checking
+						if article_num.strip() == "b":
+							inner_valid = False
+						elif article_num.isdigit() == False:
+							print("Please enter a number.")
+						elif article_num[0] == "-":
+							print("Please enter a positive number.")
+						elif article_num.isdigit() and int(article_num) > len(results) - 1:
+							print("Please pick a number less than " + str(len(results) - 1) + ".")
+						elif article_num.isdigit() and int(article_num) < 0:
+							print("Please pick a number greater than 0.")
+						else:
+
+							# gather the chosen article
+							chosen = results[int(article_num)]
+
+							# present the full article information
+							print("Here is more infromation about the article:")
+							chosen_id = chosen["id"]
+							info = col.find({"$match": {"id": chosen_id}})
+
+							# display articles which reference this article
+							print("Here are some articles that reference the article you picked:")
+							for match in col.aggregate({"$unwind": "$references"}, {"$match": {"references": chosen_id}}):
+								reference_id = match["id"] if "id" in match else ""
+								reference_title = match["title"] if "title" in match else ""
+								reference_year = match["year"] if "year" in match else ""
+								
+								print(f"{reference_id} | {reference_title} | {reference_year}")
 
 def author_search(col):
 	'''
@@ -39,19 +161,117 @@ def author_search(col):
 	# DEBUG
 	print(col.count_documents({}))
 
-	# ask user for a keyword
-	keyword = input("Enter a author keyword: ")
+	# index
+	col.create_index([("authors", "text")])
 
-	# create and run query
-	keyword = keyword.strip()
-	string_match = "(?i)" + keyword.strip() + "(?-i)"
-	# result = col.find({"authors": {"$regex": string_match}})
+	# create loop
+	outer_valid = True
+	inner_valid = True
+	while outer_valid:
 
-	pipeline = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": {"$regex" : string_match}}}]
-	result = col.aggregate(pipeline)
+		# ask user for a keyword
+		print("Enter a author keyword.")
+		print("Or type b to return back to User Menu.")
+		valid_input = True
+		while valid_input:
+			keyword = input(">>>")
 
-	for i in result:
-		print(i)
+			if keyword == "b":
+				outer_valid = False
+				valid_input = False
+				return
+			elif keyword.isdigit():
+				print("Please enter a name!")
+			else:
+				valid_input = False
+
+		# check user input
+		keyword = keyword.strip()
+		string_match = "(?i)" + keyword.strip() + "(?-i)"
+
+		# create and run query
+		# result = col.find({"authors": {"$regex": string_match}})
+		pipeline = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		pipeline_2 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": keyword}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		pipeline_3 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": keyword.strip()}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		pipeline_4 = [{"$match": { "$text": {"$search": keyword}}}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		pipeline_5 = [{"$match": { "$and":[{"$text": {"$search": keyword}}, {"authors": {"$regex" : string_match}}] }}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		pipeline_6 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": {"$elemMatch": keyword}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+
+
+		# display results
+		result = []
+		result_dict = {}
+		result = col.aggregate(pipeline_6)
+
+		# determine the number of results
+		# if count <= 0:
+		# 	print("*" * 30)
+		# 	print("There are no matched by the name of:" + keyword)
+		# 	print("Try again!")
+
+		# else:
+		# 	print("*" * 30)
+		# 	num = 1
+		# 	for i in result:
+		# 		print(str(num) + ") " + str(i))
+		# 		result_dict[num] = i["_id"]
+		# 		num += 1
+
+		print("*" * 30)
+		num = 1
+		for i in result:
+			print(str(num) + ") " + str(i))
+			result_dict[num] = i["_id"]
+			num += 1
+		
+		if len(result_dict) <= 0:
+			print("*" * 30)
+			print("There are no matched by the name of: " + keyword)
+			print("Try again!")
+			
+		else:
+			print("dict:" + str(result_dict))
+			print("size:" + str(len(result_dict)))
+			while inner_valid:
+				# The user should be able to select an author and see the title, year and venue of all articles by that author. 
+				# The result should be sorted based on year with more recent articles shown first.
+
+				# diplay user option
+				print("*" * 30)
+				print("Enter the # of the author you want to learn more about.")
+				print("Or enter b to go back.")
+				author = input(">>>")
+				
+
+				# Check user input	
+				if author.strip() == "b":
+					inner_valid = False
+				elif author.isalpha():
+					print("Please enter a number.")
+				elif author[0] == "-":
+					print("Please enter a positive number.")
+				elif author.isdigit() and int(author) <= 0:
+					print("The number you have entered is too low.")
+				elif author.isdigit() and int(author) > len(result_dict):
+					print("The number you have entered is too high.")	
+				else:
+
+					# create and run query
+					pipeline_4 = [{"$project": {"authors": 1, "title": 1, "year": 1, "venue": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+					pipeline_5 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
+						"$group": {"_id": "$authors", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
+					}, {"$sort":{"year": 1}}]
+					pipeline_6 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
+						"$group": {"_id": "$_id", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
+					}, {"$sort":{"year": 1}}]
+
+
+					result_2 = col.aggregate(pipeline_6)
+
+					# display results
+					for i in result_2:
+						print(i)
 
 def venue_list():
 	'''
@@ -119,7 +339,15 @@ def add_article(col):
 def main():
 
 	# connecting to mongodb server
-	client = connect(sys.argv[1]) # run server before connecting
+	try:
+		client = connect(sys.argv[1]) # run server before connecting
+		jsonfile_name = sys.argv[2]	# file is assumed to be in the current directory. Under specifications, Phase 1.
+	except IndexError:
+		print("You must pass the port number when running this program")
+		print("Example usage: ")
+		print("python3 phase2.py port_no\n")
+		quit()
+
 
 	# connecting to database 291db 
 	db_name = '291db' # phase 1 specs
@@ -130,6 +358,13 @@ def main():
 	col_name = 'dblp' # phase 1 specs
 	col = db[col_name] 
 
+	# create index for purpose of searching 
+	'''
+	col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
+	'''
+	#db.col.createIndex({"authors": "text", "title": "text", "references": "text", "venue":"text"})
+	#col.create_index([('authors', pymongo.TEXT)], name='search_index', default_language='english')
+	#col.create_index("authors", unique = True)
 
 	# display user options
 	valid = True
@@ -159,7 +394,7 @@ def main():
 			print("Invalid input " + str(user_option) + "!\nPlease ensure the value is greater or equal to 1.")
 		
 		elif int(user_option) == 1: # 1. search for articles - case insensitive
-			article_search()
+			article_search(col)
 		
 		elif int(user_option) == 2: # 1. search for authors - case insensitive
 			author_search(col)
