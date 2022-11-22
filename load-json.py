@@ -3,7 +3,7 @@ import os
 import sys
 import subprocess
 DEBUG = True
-MAKE_VIEWS = True
+MAKE_VIEWS = False # Turn this to true when you want to run query 3
 
 def connect(port_no):
 	''' 
@@ -81,7 +81,6 @@ def main():
 		db['view_top_references'].drop()
 	if 'view_total' in collections:
 		db['view_total'].drop()
-
 
 	if MAKE_VIEWS:
 		# generating views: should take (~3-4 mins)
