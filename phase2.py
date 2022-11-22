@@ -313,28 +313,6 @@ def venue_list(db):
 	return
 
 
-def count_articles(col, venue):
-
-	pipeline = [
-	{
-	  "$group":
-	  {
-	  	"_id": "$venue",
-	  	"num_articles": {"$count": {}}
-	  }
-	},
-	{"$match": {"$expr": { "$eq": ["$_id",venue] }}},
-	{"$project": {"num_articles": 1, "_id": 0}}
-	]
-
-	num_articles = col.aggregate(pipeline)
-
-	for i in num_articles:
-		return(i['num_articles'])
-
-	return
-	
-
 def checkUniqueness(id, col):
 	'''
 	check if id has already been used in the database.
