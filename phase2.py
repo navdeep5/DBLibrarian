@@ -48,26 +48,30 @@ def article_search(col):
 		print("*" * 30)
 
 		# input processing
-		key_words = key_words_string.split(',')
+		key_words_array = key_words_string.split(',')
 
 		# data processing - ensure there are no uncessary white spaces
-		for i in range(len(key_words)):
-			key_words[i] = key_words[i].strip().lower()
+		key_words_processed = []
+		for i in range(len(key_words_string)):
+			processed_word = key_words_string[i].strip().lower()
+			if processed_word == '':
+				continue
+			key_words_processed.append(processed_word)
 
 		# check input
-		if len(key_words) == 1:
+		if len(key_words_processed) == 1:
 
 			# return to User Menu
-			if key_words[0] == 'b':
+			if key_words_processed[0] == 'b':
 				valid = False
 				return
 		
-		elif len(key_words) == 0:
+		elif len(key_words_processed) == 0:
 			print("No words have been entered... Try again!")
 
 		# write search query
 		else:
-			pipeline = {"$text": {"$search": f"{' '.join(key_words)}"}}
+			pipeline = {"$text": {"$search": f"{' '.join(key_words_processed)}"}}
 			results = []
 
 			i = 0
@@ -85,17 +89,17 @@ def article_search(col):
 					features.append("abstract")
 
 				# for part in features:
-				# 	for word in key_words:
+				# 	for word in key_words_processed:
 				# 		if word in str(article[part]):
 				# 			#print(article[part])
 				# 			matches += 1
-				# for word_2 in key_words:
+				# for word_2 in key_words_processed:
 				# 	if any(word_2 in s for s in article["authors"]):
 				# 		matches += 1
 				# print(matches)
 
 				
-				for word in key_words:
+				for word in key_words_processed:
 					if word.lower() in article["title"].lower():
 						matches += 1
 					if word.lower() in article["venue"].lower():
@@ -108,9 +112,9 @@ def article_search(col):
 					if any(word in s for s in article["authors"]):
 						matches += 1
 
-				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
+				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words_processed):
 				
-				if matches >= len(key_words):
+				if matches >= len(key_words_processed):
 					print(f"{i}: {id} | {title} | {year} | {venue}")
 					results.append(article)
 					i += 1
@@ -294,7 +298,7 @@ def venue_list(db):
 
 	col = db['view_total']
 	pipeline = [
-  	  { "$sort": {"total_ref": -1}},
+  	  { "$sort": {"_id.distinct_ref": -1}},
   	  { "$limit" : n}
 	]
 
@@ -305,7 +309,7 @@ def venue_list(db):
 		print("Printing venues in descending order . . .")
 		print("-" * 100)
 		for i in venues:
-			print("Venue:",i['_id'],"| Times Cited:", i['total_ref'], "| Article Count:", i['count_articles']['count_articles'] )
+			print("Venue:",i['_id']['venue'],"| Times Cited:", i['_id']['distinct_ref'], "| Article Count:", i['count_articles']['count_articles'] )
 		print("-" * 100)
 	except IndexError:
 		print("No venues to print!")
