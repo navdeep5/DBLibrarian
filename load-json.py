@@ -101,99 +101,95 @@ def main():
 	col.aggregate(pipeline)
 
 
+	if MAKE_VIEWS:
+		# materialized view: 'view_top_references'
+		pipeline = [
+		  { "$project": {"_id": 0, "references": 1, "id": 1}},
+		  { "$unwind": {"path": "$references"}},
+		  {
+		  	"$lookup":
+		  	{
+		  	  "from": "dblp",
+	  	  	  "localField" : "references",	  # references
+	  	  	  "foreignField" : "id", 	  	  # id
+	  	  	  "as" : "ref_venue"
+		  	}
+		  },
+		  { "$unwind": {"path": "$ref_venue"}},
+		  { "$project": {"id": 1, "ref_venue.venue" :1}},
 
-	# materialized view: 'view_top_references'
-	pipeline = [
-	  { "$project": {"_id": 0, "references": 1, "id": 1}},
-	  { "$unwind": {"path": "$references"}},
-	  {
-	  	"$lookup":
-	  	{
-	  	  "from": "dblp",
-  	  	  "localField" : "references",	  # references
-  	  	  "foreignField" : "id", 	  	  # id
-  	  	  "as" : "ref_venue"
-	  	}
-	  },
-	  { "$unwind": {"path": "$ref_venue"}},
-	  { "$project": {"id": 1, "ref_venue.venue" :1}},
+		  # stage : group by distinct references to venue.
+		  {
+		  	"$group":
+		  	{
+		  	  "_id": 
+		  	  	{
+	  	  		"venue" : "$ref_venue.venue",
+	  	  		"id" : "$id"
+		  	  	},
+		  	}
+		  }, 
+		  { "$project": {"_id.venue" :1}},
 
-	  # stage : group by distinct references to venue.
-	  {
-	  	"$group":
-	  	{
-	  	  "_id": 
+		  {
+		  	"$group":
+		  	{
+		  	  "_id": "$_id.venue",
+		  	  "distinct_ref": {"$count": {}}
+		  	}
+		  },
+
+
+		 {"$sort": {"distinct_ref": -1}},
+		 {"$merge": {"into": "view_top_references", 'whenMatched': "replace"}}
+	  	 ]
+
+		col.aggregate(pipeline)
+		# {'_id': 'Lecture Notes in Computer Science', 'distinct_ref': 48626}
+
+
+		# materialized view: 'view_total'
+		pipeline = [
+		  { "$project": {"_id": 0, "venue": 1}},
+		  { "$match" : {"$expr": {"$ne": ["$venue",'']}}}, # remove any empty venues
+
+	  	  {
+	  	  	"$lookup":
 	  	  	{
-  	  		"venue" : "$ref_venue.venue",
-  	  		"id" : "$id"
-	  	  	},
-	  	}
-	  }, 
-	  { "$project": {"_id.venue" :1}},
+	  	  	  "from" : "view_top_references",
+	  	  	  "localField" : "venue",	  # venue
+	  	  	  "foreignField" : "_id", 	# venue
+	  	  	  "as" : "count_references" 
+	  	  	}
+	  	  },
+	  	  { "$unwind": "$count_references"}, # count_references: {'_id': 'Lecture Notes in Computer Science', 'distinct_ref': 48626}
+	  	  { "$project": {"venue": 1, "count_references.distinct_ref": 1}},
 
-	  {
-	  	"$group":
-	  	{
-	  	  "_id": "$_id.venue",
-	  	  "distinct_ref": {"$count": {}}
-	  	}
-	  },
+	  	  { 
+	  	  	"$group":
+	  	  	{
+	  	  	  "_id": 
+	  	  	  	{
+	  	  		"venue" : "$venue",
+	  	  		"distinct_ref" : "$count_references.distinct_ref"
+		  	  	},
+	  	  	}
+	  	  },
 
-
-	 {"$sort": {"distinct_ref": -1}},
-	 {"$merge": {"into": "view_top_references", 'whenMatched': "replace"}}
-  	 ]
-
-	col.aggregate(pipeline)
-	# {'_id': 'Lecture Notes in Computer Science', 'distinct_ref': 48626}
-
-
-	# materialized view: 'view_total'
-	pipeline = [
-	  { "$project": {"_id": 0, "venue": 1}},
-	  { "$match" : {"$expr": {"$ne": ["$venue",'']}}}, # remove any empty venues
-
-  	  {
-  	  	"$lookup":
-  	  	{
-  	  	  "from" : "view_top_references",
-  	  	  "localField" : "venue",	  # venue
-  	  	  "foreignField" : "_id", 	# venue
-  	  	  "as" : "count_references" 
-  	  	}
-  	  },
-  	  { "$unwind": "$count_references"}, # count_references: {'_id': 'Lecture Notes in Computer Science', 'distinct_ref': 48626}
-  	  { "$project": {"venue": 1, "count_references.distinct_ref": 1}},
-
-  	  { 
-  	  	"$group":
-  	  	{
-  	  	  "_id": 
-  	  	  	{
-  	  		"venue" : "$venue",
-  	  		"distinct_ref" : "$count_references.distinct_ref"
-	  	  	},
-  	  	}
-  	  },
-
-  	  { 
-  	  	"$lookup": 
-  	  	{
-  	  	  "from" : "count_articles",
-  	  	  "localField" : "_id.venue",   # venue
-  	  	  "foreignField" : "_id",		# venue
-  	  	  "as": "count_articles"
-  	  	}
-  	  },
-  	  { "$unwind": "$count_articles"}, # count_articles: {'_id'': venue, 'count_articles' : 1}
-  	  { "$project": {"_id": 1, "count_articles.count_articles": 1}},
-  	  { "$merge": {"into": "view_total", 'whenMatched': "replace"}}
-	] 	
-	col.aggregate(pipeline)
-
-	for i in db['view_total'].find():
-		print("Venue:",i['_id']['venue'],"| Times Cited:", i['_id']['distinct_ref'], "| Article Count:", i['count_articles']['count_articles'] )
-
+	  	  { 
+	  	  	"$lookup": 
+	  	  	{
+	  	  	  "from" : "count_articles",
+	  	  	  "localField" : "_id.venue",   # venue
+	  	  	  "foreignField" : "_id",		# venue
+	  	  	  "as": "count_articles"
+	  	  	}
+	  	  },
+	  	  { "$unwind": "$count_articles"}, # count_articles: {'_id'': venue, 'count_articles' : 1}
+	  	  { "$project": {"_id": 1, "count_articles.count_articles": 1}},
+	  	  { "$merge": {"into": "view_total", 'whenMatched': "replace"}}
+		] 	
+		col.aggregate(pipeline)
 
 
 
