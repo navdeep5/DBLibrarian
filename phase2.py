@@ -1,4 +1,4 @@
-from pymongo import MongoClient
+from pymongo import MongoClient, TEXT
 import os
 import sys
 import subprocess
@@ -17,7 +17,7 @@ def connect(port_no):
 	'''
 
 	port = 'mongodb://localhost:' + port_no
-	client = MongoClient()
+	client = MongoClient(port)
 
 	return client
 
@@ -277,9 +277,10 @@ def author_search(col):
 
 def venue_list(db):
 	'''
+	1k
+	{'_id': 'principles of knowledge representation and reasoning', 'totalReferences': 1}
 
 	'''	
-	col = db['dblp']
 
 	os.system('cls||echo -e \\\\033c')
 
@@ -291,54 +292,24 @@ def venue_list(db):
 		break
 	n = int(n)
 
+	col = db['view_total']
 	pipeline = [
-	  { "$project": {"_id": 0, "references": 1}},
-	  { "$unwind": {"path": "$references"}},
-	  
-	  # left outer join:
-	  {
-	  	"$lookup": 
-	  	{
-	  	  "from" : "dblp",
-	  	  "localField" : "references",
-	  	  "foreignField" : "id",
-	  	  "as": "referencing_venue"
-	  	}
-	  },
-
-
-	  # stage : group by venue
-	  {
-	  	"$group":
-	  	{
-	  	  "_id": "$referencing_venue.venue",
-	  	  "totalReferences": {"$count": {}} # count(*)
-	  	}
-	  },
-
-	  {"$match" : {"$expr": {"$ne": ["$_id",[]]}}}, # remove references to no venues
-	  {"$match" : {"$expr": {"$ne": ["$_id",['']]}}}, # remove empty venue names
-
-	  { "$unwind": {"path": "$_id"}},
-	  { "$sort": {"totalReferences": -1}},
+  	  { "$sort": {"total_ref": -1}},
   	  { "$limit" : n}
 	]
 
 	venues = col.aggregate(pipeline)
-	# os.system('cls||echo -e \\\\033c')
-	
 
-
+	os.system('cls||echo -e \\\\033c')
 	try:
 		print("Printing venues in descending order . . .")
-		print("-" * 120)
+		print("-" * 100)
 		for i in venues:
-			print("Venue:",i['_id'],"| Times Cited:", i['totalReferences'], "| Article Count:", count_articles(db['dblp'], i['_id']))
+			print("Venue:",i['_id'],"| Times Cited:", i['total_ref'], "| Article Count:", i['count_articles']['count_articles'] )
+		print("-" * 100)
 	except IndexError:
 		print("No venues to print!")
 
-	# for i in venues:
-	# 	print(i)
 	return
 
 
@@ -363,8 +334,6 @@ def count_articles(col, venue):
 
 	return
 	
-
-
 
 def checkUniqueness(id, col):
 	'''
@@ -424,7 +393,6 @@ def main():
 	# connecting to mongodb server
 	try:
 		client = connect(sys.argv[1]) # run server before connecting
-		jsonfile_name = sys.argv[2]	# file is assumed to be in the current directory. Under specifications, Phase 1.
 	except IndexError:
 		print("You must pass the port number when running this program")
 		print("Example usage: ")
