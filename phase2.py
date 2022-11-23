@@ -161,7 +161,7 @@ def author_search(col):
 	'''
 	
 	# DEBUG
-	print(col.count_documents({}))
+	#print(col.count_documents({}))
 
 	# index
 	#col.drop_indexes()
@@ -191,7 +191,7 @@ def author_search(col):
 
 		# check user input
 		keyword = keyword.strip()
-		string_match = "(?i)" + keyword.strip() + "(?-i)"
+		#string_match = "(?i)" + keyword.strip() + "(?-i)"
 
 		# create and run query
 		# result = col.find({"authors": {"$regex": string_match}})
@@ -207,21 +207,23 @@ def author_search(col):
 
 		# display results
 		intial = []
-		result = []
-		authors = []
+		# result = []
+		# authors = []
 		authors_dict = {}
 		result_dict = {}
 		#result = col.aggregate(pipeline_7)
 		look = "/" + keyword + "/i"
 		#result = col.find({"authors": look})
 		intial = col.find({ "$text" : { "$search" : look, 
-                          "$caseSensitive": False, 
-                          "$diacriticSensitive": True }})
+                          "$caseSensitive": False,
+                          "$diacriticSensitive": True,
+						  "$language": "none"}})
+
 		for i in intial:
 			author_list = i['authors']
 			for person in author_list:
 				if keyword.lower() in person.lower():
-					if not person in authors_dict:
+					if not person in result_dict:
 						result_dict[person] = 1
 					else:
 						result_dict[person] += 1
@@ -299,7 +301,7 @@ def author_search(col):
 					# }, {"$sort":{"year": 1}}]
 					pipeline_7 = [{"$unwind": "$authors" }, {"$match": {"authors": authors_list[int(author) - 1]}}, {
 						"$group": {"_id": "$_id", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}, "Abstract": {"$push": "$abstract"}}
-					}, {"$sort":{"year": 1}}]
+					}, {"$sort":{"Year": -1}}]
 					# pipeline_7 = [{"$unwind": "$authors" }, {"$match": {"authors": authors_list[int(author) - 1]}}, {
 					# 	"$group": {"_id": "$_id", "Count": {"$sum": 1} }
 					# }, {"$sort":{"year": 1}}]
@@ -309,7 +311,7 @@ def author_search(col):
 
 					# display results
 					for article in result_2:
-						print(article)
+						#print(article)
 						#id = title = year = venue = abstract = "N/A"
 						id = str(article["_id"]) if "_id" in article else "N/A"
 						title = str(article["Title"][0]) if "Title" in article and article["Title"] != []else "N/A"

@@ -74,7 +74,8 @@ def main():
 	col.create_index([("venue", 1)])
 	col.create_index([("id", 1)])
 
-	col.create_index([("authors", 1)])
+	#col.create_index([("authors", "text")])
+	col.create_index([("authors", "text")], default_language = "none")
 
 
 	if 'count_articles' in collections:
