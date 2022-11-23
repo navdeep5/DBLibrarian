@@ -222,11 +222,20 @@ def author_search(col):
 		for i in intial:
 			author_list = i['authors']
 			for person in author_list:
-				if keyword.lower() in person.lower():
-					if not person in result_dict:
-						result_dict[person] = 1
-					else:
-						result_dict[person] += 1
+				name = person.replace("-", " ")
+				name = name.split()
+
+				# if keyword.lower() in person.lower():
+				# 	if not person in result_dict:
+				# 		result_dict[person] = 1
+				# 	else:
+				# 		result_dict[person] += 1
+				for part in name:
+					if keyword.lower() == part.lower():
+						if not person in result_dict:
+							result_dict[person] = 1
+						else:
+							result_dict[person] += 1
 		
 		
 
