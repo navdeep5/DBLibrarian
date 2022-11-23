@@ -18,7 +18,7 @@ def connect(port_no):
 	port = 'mongodb://localhost:' + port_no
 	client = MongoClient(port)
 
-	return client
+	return client 
 
 
 def main():
@@ -55,13 +55,13 @@ def main():
 		 	print("Index: ",i)
 
 	# conceptual structure of json file
-	'''
+	"""
 	{"abstract": string, "authors": [], "n_citation": integer, "references": [], "title": string, "venue": string, "year": integer, "id": string }
 	
 	abstract is optional, there are cases with it and cases without it.
 	"authors": [string] - list of strings, each string is an author
 	"references": [string] - list of references, each reference is a string. an example of a reference. "51c7e02e-f5ed-431a-8cf5-f761f266d4be". 
-	'''
+	"""
 
 	# loading the dblp collection from json file.
 	cmd = "mongoimport --port=" + sys.argv[1] +" --db=291db --collection=dblp --file=" + jsonfile_name
@@ -73,6 +73,9 @@ def main():
 	col.create_index([("references", 1)])
 	col.create_index([("venue", 1)])
 	col.create_index([("id", 1)])
+
+	#col.create_index([("authors", "text")])
+	col.create_index([("authors", "text")], default_language = "none")
 
 
 	if 'count_articles' in collections:
