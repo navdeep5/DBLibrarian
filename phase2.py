@@ -29,10 +29,10 @@ def article_search(col):
 	'''
 	
 	# drop indexes
-	col.drop_indexes()
+	#col.drop_indexes()
 
 	# create indexes
-	col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
+	#col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
 
 	# create initial loop 
 	valid = True
