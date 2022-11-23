@@ -39,7 +39,7 @@ def article_search(col):
 	inner_valid = True
 
 	while valid:
-
+		
 		# ask user for keyboard
 		print("Enter some keyword to search for an article.")
 		print("Separate your keyword by a comma (',').")
@@ -48,30 +48,26 @@ def article_search(col):
 		print("*" * 30)
 
 		# input processing
-		key_words_array = key_words_string.split(',')
+		key_words = key_words_string.split(',')
 
 		# data processing - ensure there are no uncessary white spaces
-		key_words_processed = []
-		for i in range(len(key_words_string)):
-			processed_word = key_words_string[i].strip().lower()
-			if processed_word == '':
-				continue
-			key_words_processed.append(processed_word)
+		for i in range(len(key_words)):
+			key_words[i] = key_words[i].strip().lower()
 
 		# check input
-		if len(key_words_processed) == 1:
+		if len(key_words) == 1:
 
 			# return to User Menu
-			if key_words_processed[0] == 'b':
+			if key_words[0] == 'b':
 				valid = False
 				return
 		
-		elif len(key_words_processed) == 0:
+		elif len(key_words) == 0:
 			print("No words have been entered... Try again!")
 
 		# write search query
 		else:
-			pipeline = {"$text": {"$search": f"{' '.join(key_words_processed)}"}}
+			pipeline = {"$text": {"$search": f"{' '.join(key_words)}"}}
 			results = []
 
 			i = 0
@@ -89,17 +85,17 @@ def article_search(col):
 					features.append("abstract")
 
 				# for part in features:
-				# 	for word in key_words_processed:
+				# 	for word in key_words:
 				# 		if word in str(article[part]):
 				# 			#print(article[part])
 				# 			matches += 1
-				# for word_2 in key_words_processed:
+				# for word_2 in key_words:
 				# 	if any(word_2 in s for s in article["authors"]):
 				# 		matches += 1
 				# print(matches)
 
 				
-				for word in key_words_processed:
+				for word in key_words:
 					if word.lower() in article["title"].lower():
 						matches += 1
 					if word.lower() in article["venue"].lower():
@@ -112,9 +108,9 @@ def article_search(col):
 					if any(word in s for s in article["authors"]):
 						matches += 1
 
-				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words_processed):
+				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
 				
-				if matches >= len(key_words_processed):
+				if matches >= len(key_words):
 					print(f"{i}: {id} | {title} | {year} | {venue}")
 					results.append(article)
 					i += 1
@@ -295,6 +291,7 @@ def venue_list(db):
 			continue
 		break
 	n = int(n)
+	assert (n > 0)
 
 	col = db['view_total']
 	pipeline = [
