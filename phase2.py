@@ -29,10 +29,10 @@ def article_search(col):
 	'''
 	
 	# drop indexes
-	col.drop_indexes()
+	# col.drop_indexes()
 
 	# create indexes
-	col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
+	# col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
 
 	# create initial loop 
 	valid = True
@@ -69,10 +69,13 @@ def article_search(col):
 		else:
 			pipeline = {"$text": {"$search": f"{' '.join(key_words)}"}}
 			results = []
-
 			i = 0
+
 			for article in col.find(pipeline):
-				matches = 0
+				boolList = []
+				for n in range(len(key_words)):
+					boolList.append(False)
+				# matches = 0
 
 				id = article["id"] if "id" in article else ""
 				title = article["title"] if "title" in article else ""
@@ -97,23 +100,33 @@ def article_search(col):
 				
 				for word in key_words:
 					if word.lower() in article["title"].lower():
-						matches += 1
-					if word.lower() in article["venue"].lower():
-						matches += 1
+						boolList[key_words.index(word)] = True
+						# matches += 1
+					if article["venue"] is not None and word.lower() in article["venue"].lower():
+						boolList[key_words.index(word)] = True
+						# matches += 1
 					if word ==  str(article["year"]):
-						matches += 1
+						boolList[key_words.index(word)] = True
+						# matches += 1
 					if abstract != "":
-						if word.lower() in article["abstract"].lower():
-							matches += 1
+						if article["abstract"] is not None and word.lower() in article["abstract"].lower():
+							boolList[key_words.index(word)] = True
+							# matches += 1
 					if any(word in s for s in article["authors"]):
-						matches += 1
+						boolList[key_words.index(word)] = True
+						# matches += 1
 
+				# print(boolList)
 				#if id != "" and title != "" and year != "" and venue != "" and matches >= len(key_words):
-				
-				if matches >= len(key_words):
+				if not boolList.__contains__(False):
 					print(f"{i}: {id} | {title} | {year} | {venue}")
 					results.append(article)
 					i += 1
+				
+				# if matches >= len(key_words):
+				# 	print(f"{i}: {id} | {title} | {year} | {venue}")
+				# 	results.append(article)
+				# 	i += 1
 
 				# allow user to learn more about an article 
 			if len(results) > 0:
@@ -147,9 +160,9 @@ def article_search(col):
 						# display articles which reference this article
 						print("Here are some articles that reference the article you picked:")
 						for match in col.aggregate({"$unwind": "$references"}, {"$match": {"references": chosen_id}}):
-							reference_id = match["id"] if "id" in match else ""
-							reference_title = match["title"] if "title" in match else ""
-							reference_year = match["year"] if "year" in match else ""
+							reference_id = match["id"] if "id" in match is not None and "id" in match else ""
+							reference_title = match["title"] if "title" in match is not None and "title" in match else ""
+							reference_year = match["year"] if "year" in match is not None and "year" in match else ""
 							
 							print(f"{reference_id} | {reference_title} | {reference_year}")
 

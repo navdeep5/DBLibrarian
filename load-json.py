@@ -74,6 +74,10 @@ def main():
 	col.create_index([("venue", 1)])
 	col.create_index([("id", 1)])
 
+	col.create_index([("authors", "text")], default_language = "none")
+	col.create_index([("title", "text")])
+	col.create_index([("abstract", "text")])
+	col.create_index([("year", "text")])
 
 	if 'count_articles' in collections:
 		db['count_articles'].drop()
