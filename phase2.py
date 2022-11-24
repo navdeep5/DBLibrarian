@@ -29,17 +29,19 @@ def article_search(col):
 	'''
 	
 	# drop indexes
+
 	# col.drop_indexes()
 
 	# create indexes
 	# col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
+
 
 	# create initial loop 
 	valid = True
 	inner_valid = True
 
 	while valid:
-
+		
 		# ask user for keyboard
 		print("Enter some keyword to search for an article.")
 		print("Separate your keyword by a comma (',').")
@@ -197,10 +199,12 @@ def author_search(col):
 	'''
 	
 	# DEBUG
-	print(col.count_documents({}))
+	#print(col.count_documents({}))
 
 	# index
-	col.create_index([("authors", "text")])
+	#col.drop_indexes()
+	#col.create_index([("authors", "text")])
+	#col.create_index([("title", "text"), ("authors", "text"), ("abstract", "text"),  ("venue", "text"),  ("year", "text")])
 
 	# create loop
 	outer_valid = True
@@ -225,22 +229,53 @@ def author_search(col):
 
 		# check user input
 		keyword = keyword.strip()
-		string_match = "(?i)" + keyword.strip() + "(?-i)"
+		#string_match = "(?i)" + keyword.strip() + "(?-i)"
 
 		# create and run query
 		# result = col.find({"authors": {"$regex": string_match}})
-		pipeline = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-		pipeline_2 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": keyword}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-		pipeline_3 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": keyword.strip()}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-		pipeline_4 = [{"$match": { "$text": {"$search": keyword}}}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-		pipeline_5 = [{"$match": { "$and":[{"$text": {"$search": keyword}}, {"authors": {"$regex" : string_match}}] }}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-		pipeline_6 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": {"$elemMatch": keyword}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_2 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": keyword}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_3 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": keyword.strip()}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_4 = [{"$match": { "$text": {"$search": keyword}}}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": {"$regex" : string_match}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_5 = [{"$match": { "$and":[{"$text": {"$search": keyword}}, {"authors": {"$regex" : string_match}}] }}, {"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_6 = [{"$project": {"authors": 1, "n_citation": 1, "_id": 0}}, {"$match": {"authors": {"$elemMatch": keyword}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_7 = [{"$unwind": "$authors"}, {"$match": {"authors": {"$regex": string_match, "$options": "i"}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+		# pipeline_8 = [{"$unwind": "$authors"}, {"$match": {"authors": {"$regex": string_match, "$options": "i"}}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
 
 
 		# display results
-		result = []
+		intial = []
+		# result = []
+		# authors = []
+		authors_dict = {}
 		result_dict = {}
-		result = col.aggregate(pipeline_6)
+		#result = col.aggregate(pipeline_7)
+		look = "/" + keyword + "/i"
+		#result = col.find({"authors": look})
+		intial = col.find({ "$text" : { "$search" : look, 
+                          "$caseSensitive": False,
+                          "$diacriticSensitive": True,
+						  "$language": "none"}})
+
+		for i in intial:
+			author_list = i['authors']
+			for person in author_list:
+				name = person.replace("-", " ")
+				name = name.split()
+
+				# if keyword.lower() in person.lower():
+				# 	if not person in result_dict:
+				# 		result_dict[person] = 1
+				# 	else:
+				# 		result_dict[person] += 1
+				for part in name:
+					if keyword.lower() == part.lower():
+						if not person in result_dict:
+							result_dict[person] = 1
+						else:
+							result_dict[person] += 1
+		
+		
 
 		# determine the number of results
 		# if count <= 0:
@@ -257,10 +292,15 @@ def author_search(col):
 		# 		num += 1
 
 		print("*" * 30)
+		# num = 1
+		# for i in result:
+		# 	print(str(num) + ") " + str(i))
+		# 	result_dict[num] = i["_id"]
+		# 	num += 1
+
 		num = 1
-		for i in result:
-			print(str(num) + ") " + str(i))
-			result_dict[num] = i["_id"]
+		for indv in result_dict:
+			print(str(num) + ") " + str(indv) + ", Number of Publications: " + str(result_dict[indv]))
 			num += 1
 		
 		if len(result_dict) <= 0:
@@ -269,8 +309,9 @@ def author_search(col):
 			print("Try again!")
 			
 		else:
-			print("dict:" + str(result_dict))
-			print("size:" + str(len(result_dict)))
+			inner_valid = True
+			# print("dict:" + str(result_dict))
+			# print("size:" + str(len(result_dict)))
 			while inner_valid:
 				# The user should be able to select an author and see the title, year and venue of all articles by that author. 
 				# The result should be sorted based on year with more recent articles shown first.
@@ -295,21 +336,36 @@ def author_search(col):
 					print("The number you have entered is too high.")	
 				else:
 
+					# get list of authors
+					authors_list = list(result_dict)
 					# create and run query
-					pipeline_4 = [{"$project": {"authors": 1, "title": 1, "year": 1, "venue": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
-					pipeline_5 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
-						"$group": {"_id": "$authors", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
-					}, {"$sort":{"year": 1}}]
-					pipeline_6 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
-						"$group": {"_id": "$_id", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
-					}, {"$sort":{"year": 1}}]
+					# pipeline_4 = [{"$project": {"authors": 1, "title": 1, "year": 1, "venue": 1, "_id": 0}}, {"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {"$group": {"_id": "$authors", "Number of Publications": {"$sum": 1}}}]
+					# pipeline_5 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
+					# 	"$group": {"_id": "$authors", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
+					# }, {"$sort":{"year": 1}}]
+					# pipeline_6 = [{"$unwind": "$authors" }, {"$match": {"authors": result_dict[int(author)]}}, {
+					# 	"$group": {"_id": "$_id", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}}
+					# }, {"$sort":{"year": 1}}]
+					pipeline_7 = [{"$unwind": "$authors" }, {"$match": {"authors": authors_list[int(author) - 1]}}, {
+						"$group": {"_id": "$_id", "Title": {"$push": "$title"}, "Year": {"$push": "$year"}, "Venue": {"$push": "$venue"}, "Abstract": {"$push": "$abstract"}}
+					}, {"$sort":{"Year": -1}}]
+					# pipeline_7 = [{"$unwind": "$authors" }, {"$match": {"authors": authors_list[int(author) - 1]}}, {
+					# 	"$group": {"_id": "$_id", "Count": {"$sum": 1} }
+					# }, {"$sort":{"year": 1}}]
 
 
-					result_2 = col.aggregate(pipeline_6)
+					result_2 = col.aggregate(pipeline_7)
 
 					# display results
-					for i in result_2:
-						print(i)
+					for article in result_2:
+						#print(article)
+						#id = title = year = venue = abstract = "N/A"
+						id = str(article["_id"]) if "_id" in article else "N/A"
+						title = str(article["Title"][0]) if "Title" in article and article["Title"] != []else "N/A"
+						year = str(article["Year"][0]) if "Year" in article and article["Year"] != []else "N/A"
+						venue = str(article["Venue"]) if "Venue" in article and article["Venue"] != [] else "N/A"
+						abstract = str(article["Abstract"]) if "Abstract" in article and article["Abstract"] != [] else "N/A"
+						print("ID: " + id + "\nTitle: " + title + "\nYear: " + year + "\nVenue(s): " + venue + "\nAbstract: " + abstract)
 
 def venue_list(db):
 	'''
@@ -327,10 +383,11 @@ def venue_list(db):
 			continue
 		break
 	n = int(n)
+	assert (n > 0)
 
 	col = db['view_total']
 	pipeline = [
-  	  { "$sort": {"total_ref": -1}},
+  	  { "$sort": {"_id.distinct_ref": -1}},
   	  { "$limit" : n}
 	]
 
@@ -341,7 +398,7 @@ def venue_list(db):
 		print("Printing venues in descending order . . .")
 		print("-" * 100)
 		for i in venues:
-			print("Venue:",i['_id'],"| Times Cited:", i['total_ref'], "| Article Count:", i['count_articles']['count_articles'] )
+			print("Venue:",i['_id']['venue'],"| Times Cited:", i['_id']['distinct_ref'], "| Article Count:", i['count_articles']['count_articles'] )
 		print("-" * 100)
 	except IndexError:
 		print("No venues to print!")
