@@ -112,7 +112,7 @@ def article_search(col):
 						if article["abstract"] is not None and word.lower() in article["abstract"].lower():
 							boolList[key_words.index(word)] = True
 							# matches += 1
-					if any(word in s for s in article["authors"]):
+					if any(word in s.lower() for s in article["authors"]):
 						boolList[key_words.index(word)] = True
 						# matches += 1
 
@@ -122,6 +122,7 @@ def article_search(col):
 					print(f"{i}: {id} | {title} | {year} | {venue}")
 					results.append(article)
 					i += 1
+					inner_valid = True
 				
 				# if matches >= len(key_words):
 				# 	print(f"{i}: {id} | {title} | {year} | {venue}")
@@ -154,17 +155,39 @@ def article_search(col):
 
 						# present the full article information
 						print("Here is more infromation about the article:")
-						chosen_id = chosen["id"]
-						info = col.find({"$match": {"id": chosen_id}})
+						chosen_id = results[int(article_num)]["id"] if "id" in article else ""
+						#print(chosen_id)
+						here = col.find_one({"id": {"$eq": chosen_id}})
+						here_title = here_year = here_venue = here_abstract = here_authors = "N/A"
+						here_title = str(here["title"]) if "title" in here and here["title"] != []else "N/A"
+						here_year = str(here["year"]) if "year" in here and here["year"] != [] else "N/A"
+						here_venue = str(here["venue"]) if "venue" in here and here["venue"] != [] or here["venue"] != "" else "N/A"
+						here_abstract = str(here["abstract"]) if "abstract" in here and here["abstract"] != [] else "N/A"
+						here_authors = str(here["authors"]) if "authors" in here and here["authors"] != [] else "N/A"
+						print("ID: " + chosen_id + "\nTitle: " + here_title + "\nYear: " + here_year + "\nAuthor(s): " + here_authors + "\nVenue(s): " + here_venue + "\nAbstract: " + here_abstract)
+						#print(here)
 
 						# display articles which reference this article
-						print("Here are some articles that reference the article you picked:")
-						for match in col.aggregate({"$unwind": "$references"}, {"$match": {"references": chosen_id}}):
+						print("\nHere are some articles that reference the article you picked:")
+						found = False
+						#referenced = col.aggregate({"$match": {"references": {"$regex": chosen_id}}})
+						referenced = col.find({"references" : {"$in": [chosen_id]}})
+						query = 1
+						for match in referenced:
 							reference_id = match["id"] if "id" in match is not None and "id" in match else ""
 							reference_title = match["title"] if "title" in match is not None and "title" in match else ""
 							reference_year = match["year"] if "year" in match is not None and "year" in match else ""
 							
+							print("---- " + str(query) + " ----")
 							print(f"{reference_id} | {reference_title} | {reference_year}")
+							query += 1
+							found = True
+						
+						if not found:
+							print("Oops... looks like this article has not been referenced.")
+			else:
+				print("No articles with matching keywords exists.\n Please try again!")
+
 
 def author_search(col):
 	'''
