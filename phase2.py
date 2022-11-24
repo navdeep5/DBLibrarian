@@ -57,12 +57,9 @@ def article_search(col):
 			key_words[i] = key_words[i].strip().lower()
 
 		# check input
-		if len(key_words) == 1:
-
-			# return to User Menu
-			if key_words[0] == 'b':
-				valid = False
-				return
+		if len(key_words) == 1 and key_words[0] == 'b':
+			valid = False
+			return
 		
 		elif len(key_words) == 0:
 			print("No words have been entered... Try again!")
