@@ -2,8 +2,8 @@ from pymongo import MongoClient, TEXT
 import os
 import sys
 import subprocess
-DEBUG = True
-MAKE_VIEWS = False # Turn this to true when you want to run query 3
+DEBUG = False
+MAKE_VIEWS = True # Turn this to true when you want to run query 3
 
 def connect(port_no):
 	''' 
@@ -54,14 +54,6 @@ def main():
 		for i in col.index_information():
 		 	print("Index: ",i)
 
-	# conceptual structure of json file
-	"""
-	{"abstract": string, "authors": [], "n_citation": integer, "references": [], "title": string, "venue": string, "year": integer, "id": string }
-	
-	abstract is optional, there are cases with it and cases without it.
-	"authors": [string] - list of strings, each string is an author
-	"references": [string] - list of references, each reference is a string. an example of a reference. "51c7e02e-f5ed-431a-8cf5-f761f266d4be". 
-	"""
 
 	# loading the dblp collection from json file.
 	cmd = "mongoimport --port=" + sys.argv[1] +" --db=291db --collection=dblp --file=" + jsonfile_name
@@ -73,14 +65,6 @@ def main():
 	col.create_index([("references", 1)])
 	col.create_index([("venue", 1)])
 	col.create_index([("id", 1)])
-
-
-	# col.create_index([("authors", "text")], default_language = "none")
-	# col.create_index([("title", "text")])
-	# col.create_index([("abstract", "text")])
-	# col.create_index([("year", "text")])
-
-	#col.create_index([("authors", "text")], default_language = "none")
 	col.create_index([("authors", "text"), ("title", "text"), ("abstract", "text"), ("year", "text")])
 
 
@@ -92,25 +76,28 @@ def main():
 		db['view_total'].drop()
 
 
+
+
+	
 	# generating views: should take (~3-4 mins)
-
-	# materialized view: "count_articles"
-	# aggregating the venues, number of articles and number of references in your view?
-	pipeline = [
-		{
-		  "$group":
-		  {
-		  	"_id": "$venue",
-		  	"count_articles": {"$count": {}}
-		  }
-		},
-		{"$project": {"count_articles": 1, "_id": 1}},
-		{"$merge": {"into": "count_articles", 'whenMatched': "replace"}}
-	]
-	col.aggregate(pipeline)
-
-
 	if MAKE_VIEWS:
+
+		# materialized view: "count_articles"
+		
+		pipeline = [
+			{
+			  "$group":
+			  {
+			  	"_id": "$venue",
+			  	"count_articles": {"$count": {}}
+			  }
+			},
+			{"$project": {"count_articles": 1, "_id": 1}},
+			{"$merge": {"into": "count_articles", 'whenMatched': "replace"}}
+		]
+		col.aggregate(pipeline)
+
+
 		# materialized view: 'view_top_references'
 		pipeline = [
 		  { "$project": {"_id": 0, "references": 1, "id": 1}},
