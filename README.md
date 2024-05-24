@@ -1,5 +1,17 @@
 # DBLibrarian
 
+## Table of Contents
+
+- [Overview](#overview)
+- [User Guide](#user-guide)
+- [Primary Functions](#primary-functions)
+- [Testing Strategy](#testing-strategy)
+- [Group Work Breakdown/Responsibilities](#group-work-breakdownresponsibilities)
+- [Method of Coordination](#method-of-coordination)
+- [Appendix](#appendix)
+
+## Overview
+
 This repository contains two Python scripts for managing and querying a MongoDB database of articles. The first script, `load-json.py`, loads data into the database and creates various indexes and views. The second script, `query.py`, provides functions to search articles by keywords and authors.
 
 ## Prerequisites
@@ -17,7 +29,7 @@ This repository contains two Python scripts for managing and querying a MongoDB 
 
 2. Ensure that MongoDB is running on your local machine.
 
-## Scripts
+## User Guide
 
 ### 1. load-json.py
 
@@ -36,7 +48,7 @@ Example:
 python3 load-json.py 27017 dblp-ref-1k.json
 ```
 
-### 1. query.py
+### 2. query.py
 
 This script provides functions to query the MongoDB database for articles based on keywords and authors.
 
