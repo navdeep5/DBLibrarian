@@ -4,7 +4,6 @@
 
 - [Overview](#overview)
 - [User Guide](#user-guide)
-- [Primary Functions](#primary-functions)
 - [Testing Strategy](#testing-strategy)
 - [Group Work Breakdown/Responsibilities](#group-work-breakdownresponsibilities)
 - [Method of Coordination](#method-of-coordination)
@@ -23,7 +22,7 @@ This repository contains two Python scripts for managing and querying a MongoDB 
 ## Setup
 
 1. Install the required Python package:
-    ```bash
+    ```
     pip install pymongo
     ```
 
@@ -48,12 +47,13 @@ Example:
 python3 load-json.py 27017 dblp-ref-1k.json
 ```
 
-### 2. query.py
+### 2. phase2.py
 
 This script provides functions to query the MongoDB database for articles based on keywords and authors.
 
 #### Usage
 
+```python
 from query import search_by_keyword, search_by_author
 
 # Search articles by keyword
@@ -61,16 +61,14 @@ articles_by_keyword = search_by_keyword("keyword")
 
 # Search articles by author
 articles_by_author = search_by_author("author_name")
+```
 
 Replace "keyword" with the desired keyword and "author_name" with the name of the author you want to search for.
 
-#### License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+### Testing Strategy
 
-### 3. Testing Strategy
-
-- Unit tests for each function in `load-json.py` and `query.py`.
+- Unit tests for each function in `load-json.py` and `phase2.py`.
 - Integration tests to ensure proper interaction with MongoDB.
 - Testing against various data sets to ensure scalability and efficiency.
 
