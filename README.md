@@ -67,3 +67,27 @@ Replace "keyword" with the desired keyword and "author_name" with the name of th
 #### License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+### 3. Testing Strategy
+
+- Unit tests for each function in `load-json.py` and `query.py`.
+- Integration tests to ensure proper interaction with MongoDB.
+- Testing against various data sets to ensure scalability and efficiency.
+
+#### Group Work Breakdown/Responsibilities
+
+- **Development**: Splitting the tasks of developing the scripts and testing them.
+- **Documentation**: Writing the README and any additional documentation needed.
+- **Testing**: Designing and executing the testing strategy.
+
+#### Method of Coordination
+
+- Regular meetings to discuss progress and any roadblocks.
+- Use of project management tools like Trello or Asana for task tracking.
+- Communication via Slack or other messaging platforms for quick updates.
+
+### Appendix
+
+#### License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
